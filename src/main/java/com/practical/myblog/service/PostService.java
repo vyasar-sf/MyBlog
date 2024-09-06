@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 public class PostService {
@@ -26,11 +25,19 @@ public class PostService {
     }
 
     public Post getPost(Long id) {
-        Optional<Post> post = postRepository.findById(id);
-        if (post.isPresent()) {
-            return post.get();
-        } else {
-            throw new NoSuchElementException("Post not found with id: " + id);
-        }
+        return postRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Post not found with id: " + id));
     }
+
+
+    public Post updatePost(Post post) {
+        return postRepository.findById(post.getId())
+                .map(existingPost -> {
+                    existingPost.setTitle(post.getTitle());
+                    existingPost.setText(post.getText());
+                    return postRepository.save(existingPost);
+                })
+                .orElseThrow(() -> new NoSuchElementException("Post not found with id: " + post.getId()));
+    }
+
 }

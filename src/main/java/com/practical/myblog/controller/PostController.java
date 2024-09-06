@@ -28,6 +28,9 @@ public class PostController {
         return postService.addPost(post);
     }
 
-
+    @PutMapping
+    public Post updatePost(@RequestBody Post post){
+        return postService.updatePost(post);
+    }
 
 }
