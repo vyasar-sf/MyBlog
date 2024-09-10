@@ -10,7 +10,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PostValidationException.class)
     public ResponseEntity<String> handlePostValidationException(PostValidationException exception) {
-        // Custom response for PostValidationException
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
