@@ -1,33 +1,36 @@
 package com.practical.myblog.controller;
 
 import com.practical.myblog.model.Post;
-import com.practical.myblog.service.PostService;
+import com.practical.myblog.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/post")
+@RequestMapping("/posts")
 public class PostController {
     @Autowired
-    private PostService postService;
+    private PostServiceImpl postServiceImpl;
 
-    @GetMapping("/all")
+    @GetMapping
     public List<Post> getPosts() {
-        return postService.getAllPosts();
+        return postServiceImpl.getAllPosts();
     }
 
     @GetMapping("/{id}")
     public Post getPost(@PathVariable Long id) {
-        return postService.getPost(id);
+        return postServiceImpl.getPost(id);
     }
 
     @PostMapping
     public Post addPost(@RequestBody Post post) {
-        return postService.addPost(post);
+        return postServiceImpl.addPost(post);
     }
 
-
+    @PutMapping
+    public Post updatePost(@RequestBody Post post){
+        return postServiceImpl.updatePost(post);
+    }
 
 }
