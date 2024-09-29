@@ -3,8 +3,8 @@ package com.practical.myblog.controller;
 import com.practical.myblog.dto.TagRequestDTO;
 import com.practical.myblog.dto.TagResponseDTO;
 import com.practical.myblog.service.TagServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,8 +12,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/tags")
 public class TagController {
-    @Autowired
-    private TagServiceImpl tagServiceImpl;
+
+    private final TagServiceImpl tagServiceImpl;
+
+    public TagController(TagServiceImpl tagServiceImpl) {
+        this.tagServiceImpl = tagServiceImpl;
+    }
 
     @GetMapping
     public List<TagResponseDTO> getTags() {
@@ -26,13 +30,13 @@ public class TagController {
     }
 
     @PostMapping
-    public List<TagResponseDTO> addTag(@RequestBody TagRequestDTO tagRequestDTO) {
+    public List<TagResponseDTO> addTag(@Validated @RequestBody TagRequestDTO tagRequestDTO) {
         return tagServiceImpl.addTag(tagRequestDTO);
     }
 
-    @PutMapping("/{id}")
-    public TagResponseDTO updateTag(@PathVariable Long id, @RequestBody TagRequestDTO tagRequestDTO){
-        return tagServiceImpl.updateTag(id, tagRequestDTO);
+    @PatchMapping("/{id}")
+    public TagResponseDTO updateTagName(@PathVariable Long id, @Validated @RequestBody TagRequestDTO tagRequestDTO){
+        return tagServiceImpl.updateTagName(id, tagRequestDTO);
     }
 
     @DeleteMapping("/{id}")

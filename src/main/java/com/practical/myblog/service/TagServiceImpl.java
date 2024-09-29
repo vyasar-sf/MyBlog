@@ -6,7 +6,6 @@ import com.practical.myblog.exception.TagValidationException;
 import com.practical.myblog.model.Tag;
 import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.util.ErrorMessages;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,7 +16,6 @@ public class TagServiceImpl implements TagService{
 
     private final TagRepository tagRepository;
 
-    @Autowired
     public TagServiceImpl(TagRepository tagRepository) {
         this.tagRepository = tagRepository;
     }
@@ -51,7 +49,7 @@ public class TagServiceImpl implements TagService{
     }
 
     @Override
-    public TagResponseDTO updateTag(Long id, TagRequestDTO tagRequestDTO) {
+    public TagResponseDTO updateTagName(Long id, TagRequestDTO tagRequestDTO) {
         if (tagRequestDTO.getTags().size() > 1) {
             throw new TagValidationException(ErrorMessages.ONE_TAG_TO_UPDATE);
         }
