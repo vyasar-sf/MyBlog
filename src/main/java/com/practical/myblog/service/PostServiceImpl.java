@@ -3,15 +3,14 @@ package com.practical.myblog.service;
 import com.practical.myblog.dto.PostRequestDTO;
 import com.practical.myblog.dto.PostResponseDTO;
 import com.practical.myblog.dto.TagResponseDTO;
+import com.practical.myblog.exception.PostValidationException;
 import com.practical.myblog.exception.TagValidationException;
+import com.practical.myblog.model.Post;
 import com.practical.myblog.model.Tag;
+import com.practical.myblog.repository.PostRepository;
 import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.util.ErrorMessages;
-import com.practical.myblog.exception.PostValidationException;
-import com.practical.myblog.model.Post;
-import com.practical.myblog.repository.PostRepository;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -27,12 +26,10 @@ public class PostServiceImpl implements PostService {
     private final TagRepository tagRepository;
 
     // Constructor injection, making the dependency immutable
-    @Autowired
     public PostServiceImpl(PostRepository postRepository, TagRepository tagRepository) {
         this.postRepository = postRepository;
         this.tagRepository = tagRepository;
     }
-
 
     @Override
     public List<PostResponseDTO> getAllPosts() {
@@ -134,6 +131,8 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
     }
 
+
+
     @Override
     public PostResponseDTO updatePost(Long id, PostRequestDTO postRequestDTO) {
         isTitleEmpty(postRequestDTO);
@@ -157,6 +156,7 @@ public class PostServiceImpl implements PostService {
             throw new PostValidationException(ErrorMessages.POST_NOT_FOUND_WITH_ID + id);
         }
     }
+    
 
     private @NotNull Set<Tag> retrieveTags(Long postId, List<String> tagNames, String errorMessage) {
         return tagNames.stream()

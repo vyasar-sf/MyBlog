@@ -5,8 +5,8 @@ import com.practical.myblog.dto.PostResponseDTO;
 import com.practical.myblog.dto.TagRequestDTO;
 import com.practical.myblog.dto.TagResponseDTO;
 import com.practical.myblog.service.PostServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,8 +15,12 @@ import java.util.Set;
 @RestController
 @RequestMapping("/posts")
 public class PostController {
-    @Autowired
-    private PostServiceImpl postServiceImpl;
+
+    private final PostServiceImpl postServiceImpl;
+
+    public PostController(PostServiceImpl postServiceImpl) {
+        this.postServiceImpl = postServiceImpl;
+    }
 
     @GetMapping
     public List<PostResponseDTO> getPosts() {
@@ -29,12 +33,12 @@ public class PostController {
     }
 
     @PostMapping
-    public PostResponseDTO addPost(@RequestBody PostRequestDTO postRequestDTO) {
+    public PostResponseDTO addPost(@Validated @RequestBody PostRequestDTO postRequestDTO) {
         return postServiceImpl.addPost(postRequestDTO);
     }
 
     @PutMapping("/{id}")
-    public PostResponseDTO updatePost(@PathVariable Long id, @RequestBody PostRequestDTO postRequestDTO){
+    public PostResponseDTO updatePost(@PathVariable Long id, @Validated @RequestBody PostRequestDTO postRequestDTO){
         return postServiceImpl.updatePost(id, postRequestDTO);
     }
 
@@ -51,12 +55,12 @@ public class PostController {
     }
 
     @PostMapping("/{postId}/tags")
-    public ResponseEntity<PostResponseDTO> addTagsToPost(@PathVariable Long postId, @RequestBody TagRequestDTO tagRequestDTO) {
+    public ResponseEntity<PostResponseDTO> addTagsToPost(@PathVariable Long postId, @Validated @RequestBody TagRequestDTO tagRequestDTO) {
         return postServiceImpl.addTagsToPost(postId, tagRequestDTO.getTags());
     }
 
     @DeleteMapping("/{postId}/tags")
-    public ResponseEntity<Void> removeTagsFromPost(@PathVariable Long postId, @RequestBody TagRequestDTO tagRequestDTO) {
+    public ResponseEntity<Void> removeTagsFromPost(@PathVariable Long postId, @Validated @RequestBody TagRequestDTO tagRequestDTO) {
         postServiceImpl.removeTagsFromPost(postId, tagRequestDTO.getTags());
         return ResponseEntity.noContent().build();
     }
