@@ -42,7 +42,7 @@ public class PostController {
         return postServiceImpl.updatePost(id, postRequestDTO);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         postServiceImpl.deletePost(postId);
         // The request was successfully processed, but there is no content to send back
