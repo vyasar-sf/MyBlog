@@ -131,8 +131,6 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
     }
 
-
-
     @Override
     public PostResponseDTO updatePost(Long id, PostRequestDTO postRequestDTO) {
         isTitleEmpty(postRequestDTO);

@@ -21,6 +21,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Simulate the behavior of dependencies
+ * Test the logic of the class
+ */
 public class TagServiceTest {
     @Mock
     private TagRepository tagRepository;
