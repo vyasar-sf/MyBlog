@@ -12,12 +12,12 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 public class Tag {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Will check for this in service impl instead
-    // @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String name;
 
     // This tells Hibernate that the Post entity is the owner of the relationship

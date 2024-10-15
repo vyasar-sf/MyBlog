@@ -12,5 +12,8 @@ public class ErrorMessages {
     public static final String NO_TAGS_IN_POST = "There are no tags in post.";
     public static final String TAG_NOT_EXISTS_IN_POST = " tag doesn't exist for this post.";
     public static final String ONE_TAG_TO_UPDATE = "Only one tag is allowed to update each time.";
+    public static final String USER_NOT_FOUND_WITH_ID = "User not found with id: ";
+    public static final String USERNAME_NOT_UNIQUE = "Username must be unique.";
+    public static final String USER_NOT_FOUND_WITH_USERNAME = "User not found with username: ";
 }
 

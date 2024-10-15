@@ -6,22 +6,23 @@ import com.practical.myblog.exception.TagValidationException;
 import com.practical.myblog.model.Tag;
 import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.util.ErrorMessages;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class TagServiceImpl implements TagService{
 
     private final TagRepository tagRepository;
 
-    public TagServiceImpl(TagRepository tagRepository) {
-        this.tagRepository = tagRepository;
-    }
-
     @Override
     public List<TagResponseDTO> getAllTags() {
+        log.info("Fetching all tags.");
         return tagRepository.findAll().stream()
                 .map(tag -> new TagResponseDTO(tag.getId(), tag.getName()))
                 .collect(Collectors.toList());
@@ -29,6 +30,7 @@ public class TagServiceImpl implements TagService{
 
     @Override
     public TagResponseDTO getTag(Long id) {
+        log.info("Fetching tag with id: {}", id);
         return tagRepository.findById(id)
                 .map(tag -> new TagResponseDTO(tag.getId(), tag.getName()))
                 .orElseThrow(() -> new TagValidationException(ErrorMessages.TAG_NOT_FOUND_WITH_ID + id));
@@ -36,7 +38,7 @@ public class TagServiceImpl implements TagService{
 
     @Override
     public List<TagResponseDTO> addTag(TagRequestDTO tagRequestDTO) {
-
+        log.info("Adding tags: {}", tagRequestDTO.getTags());
         return tagRequestDTO.getTags().stream()
                 .map(tagName -> {
                     Tag tag = new Tag();
@@ -50,11 +52,15 @@ public class TagServiceImpl implements TagService{
 
     @Override
     public TagResponseDTO updateTagName(Long id, TagRequestDTO tagRequestDTO) {
+        log.info("Updating tag with id: {}", id);
+
         if (tagRequestDTO.getTags().size() > 1) {
+            log.error("Attempted to update with multiple tags.");
             throw new TagValidationException(ErrorMessages.ONE_TAG_TO_UPDATE);
         }
 
         if (tagRepository.findByName(tagRequestDTO.getTags().get(0)).isPresent()) {
+            log.error("Tag name is not unique: {}", tagRequestDTO.getTags().get(0));
             throw new TagValidationException(ErrorMessages.TAG_NOT_UNIQUE);
         }
 
@@ -70,19 +76,25 @@ public class TagServiceImpl implements TagService{
 
     @Override
     public void deleteTag(Long id) {
+        log.info("Deleting tag with id: {}", id);
         if (tagRepository.existsById(id)) {
             tagRepository.deleteById(id);
+            log.info("Tag with id: {} has been deleted.", id);
         } else {
+            log.error("Tag not found for deletion with id: {}", id);
             throw new TagValidationException(ErrorMessages.TAG_NOT_FOUND_WITH_ID + id);
         }
     }
 
     private void validateTag(Tag tag) {
+        log.info("Validating tag: {}", tag.getName());
         if (tag.getName() == null || tag.getName().trim().isEmpty()) {
+            log.error("Tag name cannot be empty.");
             throw new TagValidationException(ErrorMessages.TAG_NAME_CANNOT_BE_EMPTY);
         }
 
         if (tagRepository.findByName(tag.getName()).isPresent()) {
+            log.error("Tag name is not unique on validateTag: {}", tag.getName());
             throw new TagValidationException(ErrorMessages.TAG_NOT_UNIQUE);
         }
     }
