@@ -27,6 +27,7 @@ public class SecurityConfig {
             "/posts/**",
             "/tags/**",
             "/users/login",
+            "/users/register",
             // Allow access to Swagger UI
             "/v3/api-docs/**",
             "/swagger-ui/**",
