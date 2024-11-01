@@ -6,10 +6,9 @@ import com.practical.myblog.dto.UserRequestDTO;
 import com.practical.myblog.dto.UserResponseDTO;
 import com.practical.myblog.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -19,8 +18,11 @@ public class UserController {
     private final UserServiceImpl userServiceImpl;
 
     @GetMapping
-    public List<UserResponseDTO> getPosts() {
-        return userServiceImpl.getAllUsers();
+    public Page<UserResponseDTO> getPosts(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize
+    ) {
+        return userServiceImpl.getAllUsers(pageNo, pageSize);
     }
 
     @GetMapping("/{id}")

@@ -8,6 +8,9 @@ import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.util.ErrorMessages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,11 +24,12 @@ public class TagServiceImpl implements TagService{
     private final TagRepository tagRepository;
 
     @Override
-    public List<TagResponseDTO> getAllTags() {
-        log.info("Fetching all tags.");
-        return tagRepository.findAll().stream()
-                .map(tag -> new TagResponseDTO(tag.getId(), tag.getName()))
-                .collect(Collectors.toList());
+    public Page<TagResponseDTO> getAllTags(int pageNo, int pageSize) {
+        log.info("Retrieving all tags with pagination - Page: {}, Size: {}", pageNo, pageSize);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+
+        return tagRepository.findAll(pageable)
+                .map(tag -> new TagResponseDTO(tag.getId(), tag.getName()));
     }
 
     @Override

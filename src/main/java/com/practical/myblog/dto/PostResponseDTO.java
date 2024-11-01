@@ -12,4 +12,6 @@ public class PostResponseDTO {
     private Long id;
     private String title;
     private String text;
+    private String imageUrl;
+    private String videoUrl;
 }

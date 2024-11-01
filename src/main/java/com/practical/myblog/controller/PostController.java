@@ -5,11 +5,11 @@ import com.practical.myblog.dto.PostResponseDTO;
 import com.practical.myblog.dto.TagRequestDTO;
 import com.practical.myblog.dto.TagResponseDTO;
 import com.practical.myblog.service.PostServiceImpl;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -23,8 +23,11 @@ public class PostController {
     }
 
     @GetMapping
-    public List<PostResponseDTO> getPosts() {
-        return postServiceImpl.getAllPosts();
+    public Page<PostResponseDTO> getPosts(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize
+    ) {
+        return postServiceImpl.getAllPosts(pageNo, pageSize);
     }
 
     @GetMapping("/{id}")
@@ -65,9 +68,22 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/tag/{tagName}")
-    public List<PostResponseDTO> getAllPostsForTag(@PathVariable String tagName) {
-        return postServiceImpl.getAllPostsForTag(tagName);
+    @GetMapping("/tag")
+    public Page<PostResponseDTO> getAllPostsForTag(
+            @RequestParam("tagName") String tagName,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize
+    ) {
+        return postServiceImpl.getAllPostsForTag(tagName, pageNo, pageSize);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<Page<PostResponseDTO>> searchByKeyword(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize
+    ) {
+        Page<PostResponseDTO> posts = postServiceImpl.searchByKeyword(keyword, pageNo, pageSize);
+        return ResponseEntity.ok(posts);
+    }
 }

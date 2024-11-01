@@ -17,4 +17,7 @@ public class PostRequestDTO {
 
     @Size(max = 1000, message = "Post length must be less than 1000 characters")
     private String text;
+
+    private String imageUrl;
+    private String videoUrl;
 }

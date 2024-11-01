@@ -10,12 +10,17 @@ import com.practical.myblog.repository.PostRepository;
 import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.service.PostServiceImpl;
 import com.practical.myblog.util.ErrorMessages;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.util.*;
@@ -30,9 +35,12 @@ public class PostServiceTest {
     private PostRepository postRepository;
     @Mock
     private TagRepository tagRepository;
-
     @InjectMocks
     private PostServiceImpl postService;
+    @Mock
+    private ModelMapper modelMapper;
+    @Mock
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUp() {
@@ -48,52 +56,69 @@ public class PostServiceTest {
      */
 
     @Test
-    @DisplayName("Should return a list of PostResponseDTOs")
+    @DisplayName("Should return a page of PostResponseDTOs")
     void getAllPosts_Success() {
-        Post post1 = new Post(1L, "Title1", "Text", new HashSet<>());
-        Post post2 = new Post(2L, "Title2", "Text", new HashSet<>());
+        Post post1 = new Post(1L, "Title1", "Text1", new HashSet<>(), "url1", "url1");
+        Post post2 = new Post(2L, "Title2", "Text2", new HashSet<>(), "url2", "url2");
 
-        when(postRepository.findAll()).thenReturn(List.of(post1, post2));
+        PostResponseDTO responseDto1 = new PostResponseDTO(1L, "Title1", "Text1", "url1", "url1");
+        PostResponseDTO responseDto2 = new PostResponseDTO(2L, "Title2", "Text2", "url2", "url2");
 
-        List<PostResponseDTO> posts = postService.getAllPosts();
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        Page<Post> postPage = new PageImpl<>(List.of(post1, post2), pageRequest, 2);
 
-        assertEquals(2, posts.size());
-        assertEquals("Title1", posts.get(0).getTitle());
-        assertEquals("Title2", posts.get(1).getTitle());
+        when(postRepository.findAll(pageRequest)).thenReturn(postPage);
+        when(modelMapper.map(post1, PostResponseDTO.class)).thenReturn(responseDto1);
+        when(modelMapper.map(post2, PostResponseDTO.class)).thenReturn(responseDto2);
+
+        Page<PostResponseDTO> posts = postService.getAllPosts(0, 10);
+
+        assertEquals(2, posts.getContent().size());
+        assertEquals("Title1", posts.getContent().get(0).getTitle());
+        assertEquals("Title2", posts.getContent().get(1).getTitle());
     }
 
     @Test
-    @DisplayName("Should return an empty list when no posts are found")
+    @DisplayName("Should return an empty page when no posts are found")
     void getAllPosts_NoPosts() {
-        when(postRepository.findAll()).thenReturn(Collections.emptyList());
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        Page<Post> emptyPostPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
 
-        List<PostResponseDTO> posts = postService.getAllPosts();
+        when(postRepository.findAll(pageRequest)).thenReturn(emptyPostPage);
+
+        Page<PostResponseDTO> posts = postService.getAllPosts(0, 10);
 
         assertTrue(posts.isEmpty());
     }
 
+
     @Test
     @DisplayName("Should return a PostResponseDTO with an existing post")
     void getPost_ExistingPost() {
-        Post post = new Post(1L, "Title", "Text", new HashSet<>());
-        PostResponseDTO expectedDTO = new PostResponseDTO(post.getId(), post.getTitle(), post.getText());
+        Post post = new Post(1L, "Title", "Text", new HashSet<>(), "url", "url");
+        PostResponseDTO expectedDTO = new PostResponseDTO(post.getId(), post.getTitle(), post.getText(), post.getImageUrl(), post.getVideoUrl());
+
         when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(modelMapper.map(post, PostResponseDTO.class)).thenReturn(expectedDTO);
+
         PostResponseDTO resultDTO = postService.getPost(post.getId());
 
         assertNotNull(resultDTO);
         assertEquals(expectedDTO.getId(), resultDTO.getId());
         assertEquals(expectedDTO.getTitle(), resultDTO.getTitle());
         assertEquals(expectedDTO.getText(), resultDTO.getText());
+        assertEquals(expectedDTO.getImageUrl(), resultDTO.getImageUrl());
+        assertEquals(expectedDTO.getVideoUrl(), resultDTO.getVideoUrl());
     }
 
     @Test
-    @DisplayName("Should throw PostValidationException for nonexistent post")
-    void getPost_NonExistentPost() {
+    @DisplayName("Should throw PostValidationException when post does not exist")
+    void getPost_PostNotFound() {
         Long postId = 1L;
         when(postRepository.findById(postId)).thenReturn(Optional.empty());
-        PostValidationException exception = assertThrows(PostValidationException.class, () -> postService.getPost(postId));
 
-        assertEquals(ErrorMessages.POST_NOT_FOUND_WITH_ID + postId, exception.getMessage());
+        PostValidationException exception = assertThrows(PostValidationException.class, () -> postService.getPost(postId));
+        assertEquals("Post not found with id: " + postId, exception.getMessage());
     }
 
     @Test
@@ -114,36 +139,44 @@ public class PostServiceTest {
         postRequestDTO.setTitle("Valid Title");
         postRequestDTO.setText("Valid Text");
 
-        Post post = new Post(1L, "Valid Title", "Valid Text", new HashSet<>());
+        Post post = new Post(1L, "Valid Title", "Valid Text", new HashSet<>(), "url", "url");
+        PostResponseDTO expectedResponseDTO = new PostResponseDTO(1L, "Valid Title", "Valid Text", "url", "url");
 
+        when(modelMapper.map(postRequestDTO, Post.class)).thenReturn(post);
         when(postRepository.save(any(Post.class))).thenReturn(post);
+        when(modelMapper.map(post, PostResponseDTO.class)).thenReturn(expectedResponseDTO);
 
         PostResponseDTO responseDTO = postService.addPost(postRequestDTO);
 
         assertNotNull(responseDTO);
         assertEquals("Valid Title", responseDTO.getTitle());
         assertEquals("Valid Text", responseDTO.getText());
+        assertEquals("url", responseDTO.getImageUrl());
+        assertEquals("url", responseDTO.getVideoUrl());
     }
 
     @Test
     @DisplayName("Should return set of TagResponseDTOs for a post")
     void getTagsOfPost_Success() {
         Long postId = 1L;
-        Post post = new Post(postId, "Title", "Text", new HashSet<>());
+        Post post = new Post(postId, "Title", "Text", new HashSet<>(), "url", "url");
 
         Tag tag = new Tag(1L, "Tag", new HashSet<>());
         Set<Tag> tagSet = new HashSet<>();
         tagSet.add(tag);
 
+        TagResponseDTO expectedTagResponseDTO = new TagResponseDTO(1L, "Tag");
+
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(postRepository.tagsByPost(postId)).thenReturn(tagSet);
+        when(modelMapper.map(tag, TagResponseDTO.class)).thenReturn(expectedTagResponseDTO);
 
         Set<TagResponseDTO> tagResponseDTOs = postService.getTagsOfPost(postId);
 
         assertNotNull(tagResponseDTOs);
         assertEquals(1, tagResponseDTOs.size());
 
-        TagResponseDTO responseDTO = tagResponseDTOs.iterator().next();  // Since it's a set
+        TagResponseDTO responseDTO = tagResponseDTOs.iterator().next();
         assertEquals(1L, responseDTO.getId());
         assertEquals("Tag", responseDTO.getName());
     }
@@ -160,7 +193,7 @@ public class PostServiceTest {
     @Test
     @DisplayName("Should return a PostResponseDTO with added tags")
     void addTagsToPost_Success() {
-        Post post = new Post(1L, "Title", "Text", new HashSet<>());
+        Post post = new Post(1L, "Title", "Text", new HashSet<>(), "url", "url");
         Tag tag = new Tag(1L, "Tag", new HashSet<>());
 
         when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
@@ -185,7 +218,7 @@ public class PostServiceTest {
     @Test
     @DisplayName("Should remove tags from pos successfully")
     void removeTagsFromPost_Success() {
-        Post post = new Post(1L, "Title", "Text", new HashSet<>());
+        Post post = new Post(1L, "Title", "Text", new HashSet<>(), "url", "url");
         Tag tag = new Tag(1L, "Tag", new HashSet<>());
 
         Set<Tag> tagSet = new HashSet<>();
@@ -205,28 +238,43 @@ public class PostServiceTest {
     }
 
     @Test
-    @DisplayName("Should return a list of PostResponseDTOs for a given tag")
+    @DisplayName("Should return a page of PostResponseDTOs for a given tag")
     void getAllPostsForTag_Success() {
         String tagName = "Tag";
-        Post post1 = new Post(1L, "Title1", "Text1", new HashSet<>());
-        Post post2 = new Post(2L, "Title2", "Text2", new HashSet<>());
+        Post post1 = new Post(1L, "Title1", "Text1", new HashSet<>(), "url", "url");
+        Post post2 = new Post(2L, "Title2", "Text2", new HashSet<>(), "url", "url");
 
-        when(postRepository.findAllPostsByTagName(tagName)).thenReturn(List.of(post1, post2));
+        PostResponseDTO postResponseDTO1 = new PostResponseDTO(1L, "Title1", "Text1", "url", "url");
+        PostResponseDTO postResponseDTO2 = new PostResponseDTO(2L, "Title2", "Text2", "url", "url");
 
-        List<PostResponseDTO> result = postService.getAllPostsForTag(tagName);
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        var postPage = new PageImpl<>(List.of(post1, post2), pageRequest, 2);
+
+        when(postRepository.findAllPostsByTagName(tagName, pageRequest)).thenReturn(Optional.of(postPage));
+        when(modelMapper.map(post1, PostResponseDTO.class)).thenReturn(postResponseDTO1);
+        when(modelMapper.map(post2, PostResponseDTO.class)).thenReturn(postResponseDTO2);
+
+        Page<PostResponseDTO> result = postService.getAllPostsForTag(tagName, 0, 10);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Title1", result.get(0).getTitle());
-        assertEquals("Text2", result.get(1).getText());
+        assertEquals(2, result.getContent().size());
 
-        verify(postRepository).findAllPostsByTagName(tagName);
+        var resultPost1 = result.getContent().get(0);
+        var resultPost2 = result.getContent().get(1);
+
+        assertEquals("Title1", resultPost1.getTitle());
+        assertEquals("Text1", resultPost1.getText());
+        assertEquals("Title2", resultPost2.getTitle());
+        assertEquals("Text2", resultPost2.getText());
+
+        verify(postRepository).findAllPostsByTagName(tagName, pageRequest);
     }
+
 
     @Test
     @DisplayName("Should update post successfully")
     void updatePost_Success() {
-        Post post = new Post(1L, "Old Title", "Old Text", new HashSet<>());
+        Post post = new Post(1L, "Old Title", "Old Text", new HashSet<>(), "url", "url");
 
         PostRequestDTO postRequestDTO = new PostRequestDTO();
         postRequestDTO.setTitle("New Title");

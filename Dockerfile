@@ -5,7 +5,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # Copy the Maven build output (JAR file) into the container
-COPY target/myblog-1.4.0.jar app.jar
+COPY target/myblog-0.3.0.jar app.jar
 
 # Expose the application port (default Spring Boot port)
 EXPOSE 8080

@@ -8,13 +8,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
@@ -24,15 +26,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Test how various components work together
- */
+@Testcontainers
 @SpringBootTest // Sets up Application Context
 @AutoConfigureMockMvc // Performs HTTP requests in tests without starting a real server
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY) // Use an in-memory H2 database for testing
-@Transactional // Data will be rolled back after each test
-@ActiveProfiles("test") // To use the configuration in application-test.properties
 public class TagControllerIntegrationTest {
+
+    // Define and start a MySQLContainer for the test environment
+    @Container
+    static MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.33")
+            .withDatabaseName("testdb")
+            .withUsername("user")
+            .withPassword("password");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -44,6 +49,14 @@ public class TagControllerIntegrationTest {
 
     private Tag tag1;
     private Tag tag2;
+
+    // Dynamically register the MySQL properties for the Spring Boot context
+    @DynamicPropertySource
+    static void registerMySQLProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", mySQLContainer::getUsername);
+        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+    }
 
     @BeforeEach
     public void setUp() {
@@ -61,13 +74,13 @@ public class TagControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return a list of posts")
+    @DisplayName("Should return a page of tags")
     void getTags_Success() throws Exception {
-        mockMvc.perform(get("/tags").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/tags?pageNo=0&pageSize=10").contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].name", is(tag1.getName())))
-                .andExpect(jsonPath("$[1].name", is(tag2.getName())));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].name", is(tag1.getName())))
+                .andExpect(jsonPath("$.content[1].name", is(tag2.getName())));
     }
 
     @Test
@@ -91,7 +104,7 @@ public class TagControllerIntegrationTest {
         String jsonRequest = objectMapper.writeValueAsString(requestDTO);
 
         mockMvc.perform(post("/tags").contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest)) // Attach the JSON request body
+                        .content(jsonRequest))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].name", is(requestDTO.getTags().get(0))));

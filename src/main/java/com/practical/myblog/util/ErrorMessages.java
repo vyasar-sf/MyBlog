@@ -15,5 +15,6 @@ public class ErrorMessages {
     public static final String USER_NOT_FOUND_WITH_ID = "User not found with id: ";
     public static final String USERNAME_NOT_UNIQUE = "Username must be unique.";
     public static final String USER_NOT_FOUND_WITH_USERNAME = "User not found with username: ";
+    public static final String POST_NOT_FOUND_FOR_KEYWORD = "No posts found containing the keyword: ";
 }
 
