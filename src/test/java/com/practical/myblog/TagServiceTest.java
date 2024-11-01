@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.HashSet;
 import java.util.List;
@@ -41,18 +45,21 @@ public class TagServiceTest {
     }
 
     @Test
-    @DisplayName("Should return a list of TagResponseDTOs")
-    void getAllTags() {
+    @DisplayName("Should return a paginated list of TagResponseDTOs")
+    void getAllTags_Success() {
         Tag tag1 = new Tag(1L, "Tag1", new HashSet<>());
         Tag tag2 = new Tag(2L, "Tag2", new HashSet<>());
 
-        when(tagRepository.findAll()).thenReturn(List.of(tag1, tag2));
+        List<Tag> tags = List.of(tag1, tag2);
+        Page<Tag> tagPage = new PageImpl<>(tags, PageRequest.of(0, 10), tags.size()); // Assuming you want the first page with 10 items
 
-        List<TagResponseDTO> tags = tagService.getAllTags();
+        when(tagRepository.findAll(any(Pageable.class))).thenReturn(tagPage);
 
-        assertEquals(2, tags.size());
-        assertEquals("Tag1", tags.get(0).getName());
-        assertEquals("Tag2", tags.get(1).getName());
+        Page<TagResponseDTO> result = tagService.getAllTags(0, 10); // Pass the page number and size
+
+        assertEquals(2, result.getContent().size()); // Check the size of the page
+        assertEquals("Tag1", result.getContent().get(0).getName()); // Check first tag name
+        assertEquals("Tag2", result.getContent().get(1).getName()); // Check second tag name
     }
 
     @Test

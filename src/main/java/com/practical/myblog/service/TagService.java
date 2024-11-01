@@ -2,6 +2,7 @@ package com.practical.myblog.service;
 
 import com.practical.myblog.dto.TagRequestDTO;
 import com.practical.myblog.dto.TagResponseDTO;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -9,9 +10,11 @@ public interface TagService {
 
     /**
      * Gets all tags
+     * @param pageNo Page number
+     * @param pageSize Page size
      * @return All tags in database
      */
-    List<TagResponseDTO> getAllTags();
+    Page<TagResponseDTO> getAllTags(int pageNo, int pageSize);
 
     /**
      * Adds a tag or a list of tags

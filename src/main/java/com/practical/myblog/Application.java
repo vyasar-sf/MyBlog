@@ -13,7 +13,7 @@ public class Application {
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
-	public void onApplicationReady() {
+	public void readyMessage() {
 		String greenText = "\033[0;32mReady ✔\033[0m";
 		System.out.println(greenText);
 	}

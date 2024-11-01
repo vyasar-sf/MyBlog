@@ -4,16 +4,17 @@ import com.practical.myblog.dto.AuthenticationRequestDTO;
 import com.practical.myblog.dto.AuthenticationResponseDTO;
 import com.practical.myblog.dto.UserRequestDTO;
 import com.practical.myblog.dto.UserResponseDTO;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface UserService {
 
     /**
      * Return list of all users
+     * @param pageNo Page number
+     * @param pageSize Page size
      * @return List of all users in the database
      */
-    List<UserResponseDTO> getAllUsers();
+    Page<UserResponseDTO> getAllUsers(int pageNo, int pageSize);
 
     /**
      * Finds the user for the corresponding user ID
@@ -21,13 +22,6 @@ public interface UserService {
      * @return UserResponseDTO for the corresponding user ID
      */
     UserResponseDTO getUser(Long id);
-
-    /**
-     * Adds a new user
-     * @param userRequestDTO
-     * @return UserResponseDTO
-     */
-//    UserResponseDTO registerUser(UserRequestDTO userRequestDTO);
 
     /**
      * Deletes the user

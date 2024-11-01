@@ -7,17 +7,19 @@ import com.practical.myblog.model.Post;
 import com.practical.myblog.model.Tag;
 import com.practical.myblog.repository.PostRepository;
 import com.practical.myblog.repository.TagRepository;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,12 +30,18 @@ import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@Transactional
-@ActiveProfiles("test")
 public class PostControllerIntegrationTest {
+
+    @Container
+    static MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.33")
+            .withDatabaseName("testdb")
+            .withUsername("user")
+            .withPassword("password");
+
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -49,6 +57,14 @@ public class PostControllerIntegrationTest {
     private Post post2;
     private Tag tag1;
     private Tag tag2;
+
+    // Dynamically register the MySQL properties for the Spring Boot context
+    @DynamicPropertySource
+    static void registerMySQLProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", mySQLContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", mySQLContainer::getUsername);
+        registry.add("spring.datasource.password", mySQLContainer::getPassword);
+    }
 
     @BeforeEach
     public void setUp() {
@@ -75,13 +91,13 @@ public class PostControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return a list of posts")
+    @DisplayName("Should return a page of posts")
     void getPosts_Success() throws Exception {
-        mockMvc.perform(get("/posts").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/posts?pageNo=0&pageSize=10").contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].title", is(post1.getTitle())))
-                .andExpect(jsonPath("$[1].title", is(post2.getTitle())));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].title", is(post1.getTitle())))
+                .andExpect(jsonPath("$.content[1].title", is(post2.getTitle())));
     }
 
     @Test
@@ -173,10 +189,12 @@ public class PostControllerIntegrationTest {
     @DisplayName("Should return all posts for a given tag")
     void getAllPostsForTag_Success() throws Exception {
         String tagName = "Tag 1";
-        mockMvc.perform(get("/posts/tag/{tagName}", tagName).contentType(MediaType.APPLICATION_JSON))
+        int pageNo = 0;
+        int pageSize = 10;
+        mockMvc.perform(get("/posts/tag?tagName={tagName}&pageNo={pageNo}&pageSize={pageSize}", tagName, pageNo, pageSize).contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].title", is(post1.getTitle())));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].title", is(post1.getTitle())));
     }
 
 }

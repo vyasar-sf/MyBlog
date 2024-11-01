@@ -3,6 +3,7 @@ package com.practical.myblog.controller;
 import com.practical.myblog.dto.TagRequestDTO;
 import com.practical.myblog.dto.TagResponseDTO;
 import com.practical.myblog.service.TagServiceImpl;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +21,11 @@ public class TagController {
     }
 
     @GetMapping
-    public List<TagResponseDTO> getTags() {
-        return tagServiceImpl.getAllTags();
+    public Page<TagResponseDTO> getTags(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize
+    ) {
+        return tagServiceImpl.getAllTags(pageNo, pageSize);
     }
 
     @GetMapping("/{id}")

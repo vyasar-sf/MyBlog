@@ -10,12 +10,22 @@ import com.practical.myblog.model.Tag;
 import com.practical.myblog.repository.PostRepository;
 import com.practical.myblog.repository.TagRepository;
 import com.practical.myblog.util.ErrorMessages;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.search.mapper.orm.Search;
 import org.jetbrains.annotations.NotNull;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -28,20 +38,22 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
+    private final ModelMapper modelMapper;
+    private final EntityManager entityManager;
 
     @Override
-    public List<PostResponseDTO> getAllPosts() {
-        log.info("Retrieving all posts");
-        return postRepository.findAll().stream()
-                .map(post -> new PostResponseDTO(post.getId(), post.getTitle(), post.getText()))
-                .collect(Collectors.toList());
+    public Page<PostResponseDTO> getAllPosts(int pageNo, int pageSize) {
+        log.info("Retrieving all posts with pagination - Page: {}, Size: {}", pageNo, pageSize);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        return postRepository.findAll(pageable)
+                .map(post -> modelMapper.map(post, PostResponseDTO.class));
     }
 
     @Override
     public PostResponseDTO getPost(Long id) {
         log.info("Retrieving post with id: {}", id);
         return postRepository.findById(id)
-                .map(post -> new PostResponseDTO(post.getId(), post.getTitle(), post.getText()))
+                .map(post -> modelMapper.map(post, PostResponseDTO.class))
                 .orElseThrow(() -> new PostValidationException(ErrorMessages.POST_NOT_FOUND_WITH_ID + id));
     }
 
@@ -49,14 +61,12 @@ public class PostServiceImpl implements PostService {
     public PostResponseDTO addPost(PostRequestDTO postRequestDTO) {
         isTitleEmpty(postRequestDTO);
 
+        Post post = modelMapper.map(postRequestDTO, Post.class);
         log.info("Adding post with title: {}", postRequestDTO.getTitle());
-        Post post = new Post();
-        post.setText(postRequestDTO.getText());
-        post.setTitle(postRequestDTO.getTitle());
-
         Post savedPost = postRepository.save(post);
         log.info("Post added with id: {}", savedPost.getId());
-        return new PostResponseDTO(savedPost.getId(), savedPost.getTitle(), savedPost.getText());
+
+        return modelMapper.map(savedPost, PostResponseDTO.class);
     }
 
     @Override
@@ -68,7 +78,7 @@ public class PostServiceImpl implements PostService {
         }
 
          return postRepository.tagsByPost(id).stream()
-                 .map(tag -> new TagResponseDTO(tag.getId(), tag.getName()))
+                 .map(tag -> modelMapper.map(tag, TagResponseDTO.class))
                  .collect(Collectors.toSet());
     }
 
@@ -89,7 +99,7 @@ public class PostServiceImpl implements PostService {
         Post savedPost = postRepository.save(post);
         log.info("Tags added to post id: {}", savedPost.getId());
 
-        var postResponseDTO = new PostResponseDTO(savedPost.getId(), savedPost.getTitle(), savedPost.getText());
+        var postResponseDTO = new PostResponseDTO(savedPost.getId(), savedPost.getTitle(), savedPost.getText(), post.getImageUrl(), post.getVideoUrl());
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Post-ID", String.valueOf(postResponseDTO.getId()));
@@ -130,19 +140,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponseDTO> getAllPostsForTag(String tagName) {
+    public Page<PostResponseDTO> getAllPostsForTag(String tagName, int pageNo, int pageSize) {
         isTagEmpty(tagName);
 
         log.info("Retrieving posts for tag: {}", tagName);
-        List<Post> matchingPosts = postRepository.findAllPostsByTagName(tagName);
-        if (matchingPosts.isEmpty()) {
-            log.error("No posts found for tag: {}", tagName);
-            throw new TagValidationException(ErrorMessages.TAG_NOT_FOUND_WITH_NAME + tagName);
-        }
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        var matchingPosts = postRepository.findAllPostsByTagName(tagName, pageable)
+                .orElseThrow(() -> new PostValidationException(ErrorMessages.TAG_NOT_FOUND_WITH_NAME + tagName));
 
-        return matchingPosts.stream()
-                .map(post -> new PostResponseDTO(post.getId(), post.getTitle(), post.getText()))
-                .collect(Collectors.toList());
+        return matchingPosts.map(post -> modelMapper.map(post, PostResponseDTO.class));
     }
 
     @Override
@@ -159,7 +165,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new PostValidationException(ErrorMessages.POST_NOT_FOUND_WITH_ID + id));
 
         log.info("Post updated with id: {}", updatedPost.getId());
-        return new PostResponseDTO(id, updatedPost.getTitle(), updatedPost.getText());
+        return new PostResponseDTO(id, updatedPost.getTitle(), updatedPost.getText(), updatedPost.getImageUrl(), updatedPost.getVideoUrl());
     }
 
     @Override
@@ -173,7 +179,6 @@ public class PostServiceImpl implements PostService {
             throw new PostValidationException(ErrorMessages.POST_NOT_FOUND_WITH_ID + id);
         }
     }
-    
 
     private @NotNull Set<Tag> retrieveTags(Long postId, List<String> tagNames, String errorMessage) {
         return tagNames.stream()
@@ -187,6 +192,37 @@ public class PostServiceImpl implements PostService {
                     return tagRepository.findByName(tagName)
                             .orElseThrow(() -> new TagValidationException(ErrorMessages.TAG_NOT_FOUND_WITH_NAME + tagName));
                 }).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Page<PostResponseDTO> searchByKeyword(String keyword, int pageNo, int pageSize) {
+        log.info("Searching for posts with keyword: '{}', page: {}, size: {}", keyword, pageNo, pageSize);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+
+        List<Post> result = Search.session(entityManager)
+                .search(Post.class)
+                .where(f -> f.bool()
+                        .should(f.match().fields("title", "text").matching(keyword))
+                )
+                .fetchAllHits();
+
+        if (result.isEmpty()) {
+            log.warn("No posts found for keyword: '{}'", keyword);
+            throw new PostValidationException(ErrorMessages.POST_NOT_FOUND_FOR_KEYWORD + keyword);
+        }
+
+        List<PostResponseDTO> postResponseDTOs = result.stream()
+                .map(post -> modelMapper.map(post, PostResponseDTO.class))
+                .toList();
+
+        log.info("Found {} posts for keyword: '{}'", postResponseDTOs.size(), keyword);
+        return new PageImpl<>(postResponseDTOs, pageable, result.size());
+    }
+
+    @Transactional
+    @EventListener(ApplicationReadyEvent.class)
+    public void rebuildIndexOnStartup() throws InterruptedException {
+        Search.session(entityManager).massIndexer().startAndWait();
     }
 
 
@@ -203,5 +239,4 @@ public class PostServiceImpl implements PostService {
             throw new TagValidationException(ErrorMessages.TAG_NAME_CANNOT_BE_EMPTY);
         }
     }
-
 }

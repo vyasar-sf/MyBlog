@@ -3,6 +3,7 @@ package com.practical.myblog.service;
 import com.practical.myblog.dto.PostRequestDTO;
 import com.practical.myblog.dto.PostResponseDTO;
 import com.practical.myblog.dto.TagResponseDTO;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -12,9 +13,11 @@ public interface PostService {
 
     /**
      * Gets all posts
-     * @return List of all posts in the database
+     * @param pageNo Page number
+     * @param pageSize Page size
+     * @return Pages of the posts
      */
-    List<PostResponseDTO> getAllPosts();
+    Page<PostResponseDTO> getAllPosts(int pageNo, int pageSize);
 
     /**
      * Adds a post
@@ -55,9 +58,11 @@ public interface PostService {
     /**
      * Gets all posts for a tag
      * @param tagName A name of a tag
-     * @return List of all posts matching this tag name
+     * @param pageNo Page number
+     * @param pageSize Page size
+     * @return Page of all posts matching this tag name
      */
-    List<PostResponseDTO> getAllPostsForTag(String tagName);
+    Page<PostResponseDTO> getAllPostsForTag(String tagName, int pageNo, int pageSize);
 
     /**
      * Updates post
@@ -71,4 +76,13 @@ public interface PostService {
      * @param id ID of the post
      */
     void deletePost(Long id);
+
+    /**
+     * Returns all posts that contains the keyword either in the title or text
+     * @param keyword Keyword to look for
+     * @param pageNo Page number
+     * @param pageSize Page size
+     * @return Page of matching posts
+     */
+    Page<PostResponseDTO> searchByKeyword(String keyword, int pageNo, int pageSize);
 }
