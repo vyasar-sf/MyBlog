@@ -13,6 +13,9 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  schedule:
+    # Runs the build at 12:00 AM UTC every day
+    - cron: '0 0 * * *'
 
 jobs:
   build:
