@@ -28,23 +28,26 @@ jobs:
 
     # Step 4: Upload the JAR file as an artifact
     - name: Upload JAR file
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: myblog-jar
         path: target/myblog-*.jar
 
-    # Step 5: Deploy to Render using the JAR
+    # Step 5: Download the artifact in the deployment step
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: myblog-jar
+        path: deployment
+
+    # Step 6: Deploy to Render
     - name: Deploy to Render
       env:
         RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       run: |
-        # Download the JAR artifact
-        mkdir -p deployment
-        curl -L -o deployment/app.jar "${{ steps.build.outputs.artifacts_url }}/myblog-jar"
-
-        # Deploy to Render (adjust based on your Render setup)
+        # Deploy the downloaded JAR to Render
         curl -X POST \
           -H "Authorization: Bearer $RENDER_API_KEY" \
           -F "serviceId=<YOUR_RENDER_SERVICE_ID>" \
-          -F "sourceFile=@deployment/app.jar" \
+          -F "sourceFile=@deployment/myblog-*.jar" \
           https://api.render.com/deploy
