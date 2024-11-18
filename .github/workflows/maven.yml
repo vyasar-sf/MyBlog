@@ -37,7 +37,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: myblog-jar
-        path: target/myblog-*.jar
+        path: target/myblog*.jar
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
 #    - name: Update dependency graph
