@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: myblog-jar
-        path: target/myblog-*.jar
+        path: target/myblog*.jar
 
     # Step 5: Download the artifact in the deployment step
     - name: Download Artifact
@@ -49,5 +49,5 @@ jobs:
         curl -X POST \
           -H "Authorization: Bearer $RENDER_API_KEY" \
           -F "serviceId=<YOUR_RENDER_SERVICE_ID>" \
-          -F "sourceFile=@deployment/myblog-*.jar" \
+          -F "sourceFile=@deployment/myblog*.jar" \
           https://api.render.com/deploy
