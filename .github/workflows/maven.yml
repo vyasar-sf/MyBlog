@@ -34,7 +34,7 @@ jobs:
       run: mvn -B package -DskipTests --file pom.xml
     
     - name: Upload JAR file
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: myblog-jar
         path: target/myblog-*.jar
