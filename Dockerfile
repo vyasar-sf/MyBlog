@@ -4,7 +4,7 @@ FROM openjdk:17-jdk-slim
 # RUN apt-get update && apt-get install -y maven
 
 # Set the working directory inside the container
-WORKDIR /app/target
+WORKDIR /app
 
 # Copy the Maven build output (JAR file) into the container
 COPY . .
