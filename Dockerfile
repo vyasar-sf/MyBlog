@@ -17,4 +17,4 @@ EXPOSE 8080
 # WORKDIR /app/target
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "app.jar"]
