@@ -20,4 +20,4 @@ RUN ["mvn", "clean", "install", "-DskipTests"]
 WORKDIR /app/target
 
 # Set the command to run the application
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "myblog-jar.jar"]
