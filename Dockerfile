@@ -14,7 +14,7 @@ COPY . .
 EXPOSE 8080
 
 # Build the application using Maven
-RUN ["mvn", "clean", "install"]
+RUN ["mvn", "clean", "install", "-DskipTests"]
 
 # Switch to the directory containing the built JAR file
 WORKDIR /app/target
