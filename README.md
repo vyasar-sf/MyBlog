@@ -26,7 +26,6 @@
 - `application.properties` is included at src/main/resources.
 - Make sure all of the dependencies in `pom.xml` are working.
 - Install Docker Desktop.
-- Setup Java CI with Maven on Github Acitons.
 - Create a Render account and a PostgreSLQ database. 
 - Create a Web Service project. Add environment variables: DB_JDBC_URL, DB_PASSWORD, DB_USER, JWT_SECRET (generated with a random key generator)
 
