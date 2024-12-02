@@ -2,12 +2,12 @@
 
 - Java 17
 - Spring Boot 3.3
+- Spring Security 6
 - Maven
 - PostgreSQL on Render
 - Spring Data JPA
 - Relational Database
 - REST Services
-- Java Bean Validation
 - Docker
 - JUnit 5 (Mockito)
 - Integration Tests with Test Containers
