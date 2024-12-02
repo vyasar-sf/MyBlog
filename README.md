@@ -31,4 +31,4 @@
 
 <br>
 
-https://myblog-new1.onrender.com
+https://myblog-new1.onrender.com/myblog/swagger-ui.html
